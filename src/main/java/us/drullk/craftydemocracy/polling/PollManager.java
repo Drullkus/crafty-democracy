@@ -1,9 +1,11 @@
 package us.drullk.craftydemocracy.polling;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import us.drullk.craftydemocracy.CraftyDemocracyMod;
 import us.drullk.craftydemocracy.io.PollMetaData;
 import us.drullk.craftydemocracy.io.PollIO;
 
@@ -15,8 +17,8 @@ import java.util.UUID;
 
 public class PollManager {
 
-	private static final SimpleCommandExceptionType ERROR_SET_FAILED = new SimpleCommandExceptionType(Component.translatable("commands.poll.set.failed"));
-	private static final SimpleCommandExceptionType ERROR_TOO_MANY_VOTES = new SimpleCommandExceptionType(Component.translatable("commands.poll.set.toomany"));
+	private static final SimpleCommandExceptionType ERROR_IO_FAILED = new SimpleCommandExceptionType(Component.literal("Saving poll errored"));
+	private static final DynamicCommandExceptionType ERROR_TOO_MANY_VOTES = new DynamicCommandExceptionType(arg -> Component.translatable("Tried to vote for more choices than allowed (Limit: %s)".formatted(arg)));
 
 	private final PollIO pollIO = new PollIO();
 
@@ -27,7 +29,7 @@ public class PollManager {
 		PollMetaData pollMetaData = this.getPollMetaData(server);
 
 		if (choices.size() > pollMetaData.choiceLimit()) {
-			throw ERROR_TOO_MANY_VOTES.create();
+			throw ERROR_TOO_MANY_VOTES.create(pollMetaData.choiceLimit());
 		}
 
 		HashMap<UUID, List<String>> poll = this.getPoll(server);
@@ -35,7 +37,8 @@ public class PollManager {
 		try {
 			this.savePoll(server, poll);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to save poll", e);
+			CraftyDemocracyMod.LOGGER.error("Failed to save poll", e);
+			throw ERROR_IO_FAILED.create();
 		}
 	}
 
@@ -66,7 +69,8 @@ public class PollManager {
 		try {
 			this.pollIO.savePollMetaData(server, pollMetaData);
 		} catch (IOException e) {
-			throw ERROR_SET_FAILED.create();
+			CraftyDemocracyMod.LOGGER.error("Failed to save poll metadata", e);
+			throw ERROR_IO_FAILED.create();
 		}
 	}
 
