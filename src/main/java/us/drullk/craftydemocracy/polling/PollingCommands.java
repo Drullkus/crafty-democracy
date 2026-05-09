@@ -12,10 +12,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.common.util.FakePlayer;
@@ -138,17 +135,29 @@ public class PollingCommands {
 
 		List<MutableComponent> ballot = new ArrayList<>();
 
+		ballot.add(Component.literal("\nChoices:\n"));
+
+		int choicesLeft = pollMetaData.choiceLimit() - chosen.size();
+
 		for (String choice : choices) {
 			MutableComponent line = Component.empty();
 
-			line.append("- ");
+			line.append(" • ");
 			line.append(choice);
 
 			if (chosen.contains(choice)) {
-				UnaryOperator<Style> unvoteTrigger = s -> s.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote remove " + choice));
+				UnaryOperator<Style> unvoteTrigger = s -> s
+						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to remove vote for " + choice)))
+						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote remove " + choice))
+						;
+
 				line.append(Component.translatable(" [%s]", Component.literal("Unvote").withStyle(ChatFormatting.DARK_GREEN).withStyle(unvoteTrigger)));
-			} else {
-				UnaryOperator<Style> voteTrigger = s -> s.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote add " + choice));
+			} else if (choicesLeft > 0) {
+				UnaryOperator<Style> voteTrigger = s -> s
+						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to add vote for " + choice)))
+						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote add " + choice))
+						;
+
 				line.append(Component.translatable(" [%s]", Component.literal("Vote").withStyle(ChatFormatting.GREEN).withStyle(voteTrigger)));
 			}
 
@@ -156,7 +165,6 @@ public class PollingCommands {
 			ballot.add(line);
 		}
 
-		int choicesLeft = pollMetaData.choiceLimit() - chosen.size();
 		ballot.add(Component.literal("Choices left: " + choicesLeft));
 
 		return ballot.stream().reduce(Component.empty(), MutableComponent::append);
