@@ -1,7 +1,6 @@
 package us.drullk.craftydemocracy;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class StringUtil {
 

@@ -5,12 +5,17 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import us.drullk.craftydemocracy.StringUtil;
+
+import java.util.List;
 
 public class PollingCommands {
 
@@ -80,12 +85,26 @@ public class PollingCommands {
 		return 0;
 	}
 
+	private static final SimpleCommandExceptionType ERROR_TOO_FEW_CHOICES = new SimpleCommandExceptionType(Component.literal("There must be at least 2 choices"));
+	private static final SimpleCommandExceptionType ERROR_CHOICE_LIMIT_TOO_LOW = new SimpleCommandExceptionType(Component.literal("Players must be permitted at least 1 choice"));
+	private static final Dynamic2CommandExceptionType ERROR_CHOICE_LIMIT_TOO_HIGH = new Dynamic2CommandExceptionType((choiceLimit, choiceCount) -> Component.literal("Players' choice limit (%s) is greater than actual list of options (%s)".formatted(choiceLimit, choiceCount)));
 	private int setPoll(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		String name = StringArgumentType.getString(context, "name");
 		int choiceLimit = IntegerArgumentType.getInteger(context, "choice_limit");
-		String choices = StringArgumentType.getString(context, "choices");
+		List<String> choices = StringUtil.splitWhitespace(StringArgumentType.getString(context, "choices"));
 
-		this.pollManager.setPoll(context.getSource().getServer(), name, choiceLimit, StringUtil.splitWhitespace(choices));
+		if (choices.size() < 2) {
+			throw ERROR_TOO_FEW_CHOICES.create();
+		} else if (choiceLimit < 1) {
+			throw ERROR_CHOICE_LIMIT_TOO_LOW.create();
+		} else if (choices.size() < choiceLimit) {
+			throw ERROR_CHOICE_LIMIT_TOO_HIGH.create(choiceLimit, choices.size());
+		}
+
+		this.pollManager.setPoll(context.getSource().getServer(), name, choiceLimit, choices);
+
+		Component response = Component.literal("Started poll %s with options %s, limited to %d choices".formatted(name, choices, choiceLimit));
+		context.getSource().sendSystemMessage(response);
 
 		return 0;
 	}
