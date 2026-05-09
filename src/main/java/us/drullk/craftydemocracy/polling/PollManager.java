@@ -74,10 +74,12 @@ public class PollManager {
 		this.setVotes(server, player, copied);
 	}
 
-		this.setVotes(server, player, choices);
+	public List<String> getPlayerVotes(MinecraftServer server, UUID player) {
+		List<String> choices = this.getPoll(server).get(player);
+		return choices == null ? Collections.emptyList() : choices;
 	}
 
-	private PollMetaData getPollMetaData(MinecraftServer server) {
+	public PollMetaData getPollMetaData(MinecraftServer server) {
 		if (this.pollMetaDataCache == null) {
 			this.pollMetaDataCache = this.pollIO.loadPollMetaData(server);
 		}

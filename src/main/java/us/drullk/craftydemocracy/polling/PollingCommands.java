@@ -1,5 +1,6 @@
 package us.drullk.craftydemocracy.polling;
 
+import com.google.common.collect.ImmutableSet;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -10,12 +11,18 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import us.drullk.craftydemocracy.StringUtil;
+import us.drullk.craftydemocracy.io.PollMetaData;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public class PollingCommands {
 
@@ -61,11 +68,10 @@ public class PollingCommands {
 
 		this.pollManager.setVotes(source.getServer(), player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
 
-		// TODO print player their chosen
+		this.respondChoices(source.getServer(), player.getGameProfile().getId(), context);
 
 		return 0;
 	}
-
 
 	private int addVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
@@ -80,9 +86,42 @@ public class PollingCommands {
 
 		this.pollManager.addVotes(source.getServer(), player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
 
-		// TODO print player their chosen
+		this.respondChoices(source.getServer(), player.getGameProfile().getId(), context);
 
 		return 0;
+	}
+
+	private Component getVotingList(MinecraftServer server, UUID player) {
+		PollMetaData pollMetaData = this.pollManager.getPollMetaData(server);
+		List<String> choices = pollMetaData.choices();
+		Set<String> chosen = ImmutableSet.copyOf(this.pollManager.getPlayerVotes(server, player));
+
+		List<MutableComponent> ballot = new ArrayList<>();
+
+		for (String choice : choices) {
+			MutableComponent line = Component.empty();
+
+			line.append("- ");
+			line.append(choice);
+
+			if (chosen.contains(choice)) {
+				line.append(" [Voted]");
+			} else {
+			}
+
+			line.append("\n");
+			ballot.add(line);
+		}
+
+		int choicesLeft = pollMetaData.choiceLimit() - chosen.size();
+		ballot.add(Component.literal("Choices left: " + choicesLeft));
+
+		return ballot.stream().reduce(Component.empty(), MutableComponent::append);
+	}
+
+	private void respondChoices(MinecraftServer server, UUID player, CommandContext<CommandSourceStack> context) {
+		Component votingList = this.getVotingList(server, player);
+		context.getSource().sendSystemMessage(votingList);
 	}
 
 	private static final SimpleCommandExceptionType ERROR_TOO_FEW_CHOICES = new SimpleCommandExceptionType(Component.literal("There must be at least 2 choices"));
