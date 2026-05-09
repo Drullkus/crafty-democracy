@@ -48,7 +48,7 @@ public class PollManager {
 	private void validate(MinecraftServer server, List<String> choices, PollMetaData pollMetaData) throws CommandSyntaxException {
 		List<CommandSyntaxException> errors = new ArrayList<>();
 
-		List<String> exclusions = CollectionUtil.getExclusions(this.getPollMetaData(server).choices(), choices);
+		List<String> exclusions = CollectionUtil.getExclusions(this.getPollMetaData(server).stringChoices(), choices);
 		if (!exclusions.isEmpty()) {
 			errors.add(ERROR_NOT_CHOICES.create(exclusions));
 		}
@@ -93,7 +93,7 @@ public class PollManager {
 	public Map<String, Long> getResults(MinecraftServer server) {
 		Map<String, Long> results = new HashMap<>();
 
-		for (String choice : this.getPollMetaData(server).choices()) {
+		for (String choice : this.getPollMetaData(server).stringChoices()) {
 			results.put(choice, 0L);
 		}
 
@@ -115,7 +115,7 @@ public class PollManager {
 		return this.pollMetaDataCache;
 	}
 
-	public void setPoll(MinecraftServer server, String name, int choiceLimit, List<String> choices) throws CommandSyntaxException {
+	public void setPoll(MinecraftServer server, String name, int choiceLimit, List<Component> choices) throws CommandSyntaxException {
 		this.setPollMetaData(server, new PollMetaData(name, choiceLimit, choices));
 	}
 

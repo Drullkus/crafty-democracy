@@ -150,7 +150,7 @@ public class PollingCommands {
 
 	private Component getVotingList(MinecraftServer server, UUID player) {
 		PollMetaData pollMetaData = this.pollManager.getPollMetaData(server);
-		List<String> choices = pollMetaData.choices();
+		List<String> choices = pollMetaData.stringChoices();
 		Set<String> chosen = ImmutableSet.copyOf(this.pollManager.getPlayerVotes(server, player));
 
 		List<MutableComponent> ballot = new ArrayList<>();
@@ -211,7 +211,7 @@ public class PollingCommands {
 			throw ERROR_CHOICE_LIMIT_TOO_HIGH.create(choiceLimit, choices.size());
 		}
 
-		this.pollManager.setPoll(context.getSource().getServer(), name, choiceLimit, choices);
+		this.pollManager.setPoll(context.getSource().getServer(), name, choiceLimit, choices.stream().<Component>map(Component::literal).toList());
 
 		Component response = Component.literal("Started poll %s with options %s, limited to %d choices".formatted(name, choices, choiceLimit));
 		context.getSource().sendSystemMessage(response);
