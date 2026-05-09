@@ -42,11 +42,11 @@ displayName="${mod_name}" #mandatory
 #credits="" #optional
 
 # The authors of the mod, displayed in the mod UI (optional)
-#authors=""
+authors="Drullkus"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Example mod description.
+Adds commands for players to vote from a list.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
