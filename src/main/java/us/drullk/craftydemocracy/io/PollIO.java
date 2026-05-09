@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 
+// TODO Async executor?
 public class PollIO {
 
 	private static final Codec<HashMap<UUID, List<String>>> POLL_CODEC = Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.STRING.listOf()).xmap(HashMap::new, Function.identity());
@@ -107,6 +108,8 @@ public class PollIO {
 	}
 
 	public void savePollMetaData(MinecraftServer server, PollMetaData pollMetaData) throws IOException {
+		this.guardPollName(pollMetaData.name());
+
 		DataResult<Tag> tagDataResult = PollMetaData.CODEC.encodeStart(NbtOps.INSTANCE, pollMetaData);
 
 		Optional<CompoundTag> compoundTag = tagDataResult.result().flatMap(tag -> tag instanceof CompoundTag cT ? Optional.of(cT) : Optional.empty());

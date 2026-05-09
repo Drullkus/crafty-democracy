@@ -5,7 +5,7 @@ import java.util.*;
 public class StringUtil {
 
 	public static boolean isAlphaNumeric(String str) {
-		return str.matches("[a-zA-Z0-9]*");
+		return str.matches("[A-Za-z0-9]+");
 	}
 
 	public static List<String> splitWhitespace(String str) {

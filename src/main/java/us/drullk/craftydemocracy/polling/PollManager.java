@@ -41,6 +41,8 @@ public class PollManager {
 			CraftyDemocracyMod.LOGGER.error("Failed to save poll", e);
 			throw ERROR_IO_FAILED.create();
 		}
+
+		CraftyDemocracyMod.LOGGER.info("{} voted for {}", player, choices);
 	}
 
 	private void validate(MinecraftServer server, List<String> choices, PollMetaData pollMetaData) throws CommandSyntaxException {
@@ -70,6 +72,15 @@ public class PollManager {
 
 		ArrayList<String> copied = new ArrayList<>(chosen == null ? new ArrayList<>() : chosen);
 		copied.addAll(list);
+
+		this.setVotes(server, player, copied);
+	}
+
+	public void removeVotes(MinecraftServer server, UUID player, List<String> list) throws CommandSyntaxException {
+		List<String> chosen = this.getPoll(server).get(player);
+
+		ArrayList<String> copied = new ArrayList<>(chosen == null ? new ArrayList<>() : chosen);
+		copied.removeAll(list);
 
 		this.setVotes(server, player, copied);
 	}
