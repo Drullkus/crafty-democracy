@@ -20,10 +20,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import us.drullk.craftydemocracy.StringUtil;
 import us.drullk.craftydemocracy.io.PollMetaData;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 public class PollingCommands {
@@ -56,8 +53,28 @@ public class PollingCommands {
 
 	private void registerAdminCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
 		root.then(Commands.literal("set").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::setPoll)))));
+		root.then(Commands.literal("announce").requires(this::requireGM).executes(this::announceResults));
+	}
 
-		// TODO announce results command
+	private int announceResults(CommandContext<CommandSourceStack> context) {
+		CommandSourceStack source = context.getSource();
+		MinecraftServer server = source.getServer();
+
+		Map<String, Long> results = this.pollManager.getResults(server);
+
+		List<MutableComponent> ballot = new ArrayList<>();
+		ballot.add(Component.literal("Results"));
+		for (Map.Entry<String, Long> entry : results.entrySet()) {
+			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue()));
+		}
+
+		Component resultsList = ballot.stream().reduce(Component.empty(), MutableComponent::append);
+
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			player.sendSystemMessage(resultsList);
+		}
+
+		return 0;
 	}
 
 	private int showBallot(CommandContext<CommandSourceStack> context) {
@@ -76,6 +93,7 @@ public class PollingCommands {
 
 	private int setVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
+		MinecraftServer server = source.getServer();
 
 		String choices = StringArgumentType.getString(context, "choices");
 
@@ -85,15 +103,16 @@ public class PollingCommands {
 			return 1;
 		}
 
-		this.pollManager.setVotes(source.getServer(), player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
+		this.pollManager.setVotes(server, player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
 
-		this.respondChoices(source.getServer(), player.getGameProfile().getId(), context);
+		this.respondChoices(server, player.getGameProfile().getId(), context);
 
 		return 0;
 	}
 
 	private int addVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
+		MinecraftServer server = source.getServer();
 
 		String choices = StringArgumentType.getString(context, "choices");
 
@@ -103,15 +122,16 @@ public class PollingCommands {
 			return 1;
 		}
 
-		this.pollManager.addVotes(source.getServer(), player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
+		this.pollManager.addVotes(server, player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
 
-		this.respondChoices(source.getServer(), player.getGameProfile().getId(), context);
+		this.respondChoices(server, player.getGameProfile().getId(), context);
 
 		return 0;
 	}
 
 	private int removeVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
+		MinecraftServer server = source.getServer();
 
 		String choices = StringArgumentType.getString(context, "choices");
 
@@ -121,9 +141,9 @@ public class PollingCommands {
 			return 1;
 		}
 
-		this.pollManager.removeVotes(source.getServer(), player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
+		this.pollManager.removeVotes(server, player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
 
-		this.respondChoices(source.getServer(), player.getGameProfile().getId(), context);
+		this.respondChoices(server, player.getGameProfile().getId(), context);
 
 		return 0;
 	}

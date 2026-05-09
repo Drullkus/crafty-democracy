@@ -90,6 +90,24 @@ public class PollManager {
 		return choices == null ? Collections.emptyList() : choices;
 	}
 
+	public Map<String, Long> getResults(MinecraftServer server) {
+		Map<String, Long> results = new HashMap<>();
+
+		for (String choice : this.getPollMetaData(server).choices()) {
+			results.put(choice, 0L);
+		}
+
+		HashMap<UUID, List<String>> poll = this.getPoll(server);
+
+		for (List<String> votes : poll.values()) {
+			for (String vote : votes) {
+				results.compute(vote, (k, v) -> v == null ? 1 : v + 1);
+			}
+		}
+
+		return results;
+	}
+
 	public PollMetaData getPollMetaData(MinecraftServer server) {
 		if (this.pollMetaDataCache == null) {
 			this.pollMetaDataCache = this.pollIO.loadPollMetaData(server);
