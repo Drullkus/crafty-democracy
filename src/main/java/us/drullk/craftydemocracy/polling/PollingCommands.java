@@ -53,6 +53,7 @@ public class PollingCommands {
 	private void registerAdminCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
 		root.then(Commands.literal("set").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::setPoll)))));
 		root.then(Commands.literal("announce").requires(this::requireGM).executes(this::announceResults));
+		root.then(Commands.literal("end").requires(this::requireGM).executes(this::endPoll));
 		root.then(Commands.literal("import").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).executes(this::importPoll))));
 	}
 
@@ -65,7 +66,7 @@ public class PollingCommands {
 		List<MutableComponent> ballot = new ArrayList<>();
 		ballot.add(Component.literal("Results"));
 		for (Map.Entry<String, Long> entry : results.entrySet()) {
-			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue()));
+			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue() + " votes"));
 		}
 
 		Component resultsList = ballot.stream().reduce(Component.empty(), MutableComponent::append);
@@ -75,6 +76,14 @@ public class PollingCommands {
 		}
 
 		return 0;
+	}
+
+	private int endPoll(CommandContext<CommandSourceStack> context) {
+		int ret = this.announceResults(context);
+
+		this.pollManager.stopPoll(context.getSource().getServer());
+
+		return ret;
 	}
 
 	private int showBallot(CommandContext<CommandSourceStack> context) {

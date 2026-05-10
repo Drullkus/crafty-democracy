@@ -178,4 +178,18 @@ public class PollIO {
 		}
 	}
 
+	public void stopActivePoll(MinecraftServer server) {
+		Path pollMetaTempPath = this.getPollMetaPath(server, "_temp");
+		Path pollMetaPath = this.getPollMetaPath(server, "");
+		Path pollMetaOldPath = this.getPollMetaPath(server, SUFFIX_OLD);
+
+		try {
+			Files.deleteIfExists(pollMetaTempPath);
+			Files.deleteIfExists(pollMetaOldPath);
+			Files.deleteIfExists(pollMetaPath);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 }

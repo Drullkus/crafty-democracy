@@ -147,4 +147,11 @@ public class PollManager {
 	private void savePoll(MinecraftServer server, HashMap<UUID, List<String>> poll) throws IOException {
 		this.pollIO.savePoll(server, this.getPollMetaData(server).name(), poll);
 	}
+
+	public void stopPoll(MinecraftServer server) {
+		this.pollMetaDataCache = null;
+		this.pollCache = null;
+		this.pollIO.stopActivePoll(server);
+	}
+
 }
