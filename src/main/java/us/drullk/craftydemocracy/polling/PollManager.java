@@ -1,6 +1,7 @@
 package us.drullk.craftydemocracy.polling;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.network.chat.Component;
@@ -16,10 +17,15 @@ import java.util.*;
 public class PollManager {
 
 	private static final SimpleCommandExceptionType ERROR_IO_FAILED = new SimpleCommandExceptionType(Component.literal("Saving poll errored"));
+
 	private static final DynamicCommandExceptionType ERROR_TOO_MANY_VOTES = new DynamicCommandExceptionType(arg -> Component.literal("Tried to vote for more choices than allowed (Limit: %s)".formatted(arg)));
 	private static final DynamicCommandExceptionType ERROR_REPEAT_VOTES = new DynamicCommandExceptionType(arg -> Component.literal("Choices were repeated %s".formatted(arg)));
 	private static final DynamicCommandExceptionType ERROR_NOT_CHOICES = new DynamicCommandExceptionType(arg -> Component.literal("Votes contained unlisted choices %s".formatted(arg)));
 	private static final DynamicCommandExceptionType ERROR_MULTIPLE = new DynamicCommandExceptionType(arg -> Component.literal("Multiple errors: %s".formatted(arg)));
+
+	private static final SimpleCommandExceptionType ERROR_TOO_FEW_CHOICES = new SimpleCommandExceptionType(Component.literal("There must be at least 2 choices"));
+	private static final SimpleCommandExceptionType ERROR_CHOICE_LIMIT_TOO_LOW = new SimpleCommandExceptionType(Component.literal("Players must be permitted at least 1 choice"));
+	private static final Dynamic2CommandExceptionType ERROR_CHOICE_LIMIT_TOO_HIGH = new Dynamic2CommandExceptionType((choiceLimit, choiceCount) -> Component.literal("Players' choice limit (%s) is greater than actual list of options (%s)".formatted(choiceLimit, choiceCount)));
 
 	private final PollIO pollIO = new PollIO();
 
@@ -124,6 +130,14 @@ public class PollManager {
 	}
 
 	private void setPollMetaData(MinecraftServer server, PollMetaData pollMetaData) throws CommandSyntaxException {
+		if (pollMetaData.choices().size() < 2) {
+			throw ERROR_TOO_FEW_CHOICES.create();
+		} else if (pollMetaData.choiceLimit() < 1) {
+			throw ERROR_CHOICE_LIMIT_TOO_LOW.create();
+		} else if (pollMetaData.choices().size() < pollMetaData.choiceLimit()) {
+			throw ERROR_CHOICE_LIMIT_TOO_HIGH.create(pollMetaData.choiceLimit(), pollMetaData.choices().size());
+		}
+
 		this.pollMetaDataCache = pollMetaData;
 
 		try {
