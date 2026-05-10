@@ -50,9 +50,28 @@ public class PollingCommands {
 
 	private void registerAdminCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
 		root.then(Commands.literal("set").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::setPoll)))));
+		root.then(Commands.literal("get").requires(this::requireGM).executes(this::getResults));
 		root.then(Commands.literal("announce").requires(this::requireGM).executes(this::announceResults));
 		root.then(Commands.literal("end").requires(this::requireGM).executes(this::endPoll));
 		root.then(Commands.literal("import").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).executes(this::importPoll))));
+	}
+
+	private int getResults(CommandContext<CommandSourceStack> context) {
+		CommandSourceStack source = context.getSource();
+		MinecraftServer server = source.getServer();
+
+		Map<String, Long> results = this.pollManager.getResults(server);
+
+		List<MutableComponent> ballot = new ArrayList<>();
+		ballot.add(Component.literal("Results"));
+		for (Map.Entry<String, Long> entry : results.entrySet()) {
+			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue() + " votes"));
+		}
+
+		Component resultsList = ballot.stream().reduce(Component.empty(), MutableComponent::append);
+		source.sendSystemMessage(resultsList);
+
+		return 0;
 	}
 
 	private int announceResults(CommandContext<CommandSourceStack> context) {
