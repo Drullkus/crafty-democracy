@@ -1,7 +1,6 @@
 package us.drullk.craftydemocracy.polling;
 
 import com.google.common.collect.ImmutableSet;
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -34,13 +33,13 @@ public class PollingCommands {
 	public void registerCommands(RegisterCommandsEvent event) {
 		LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("poll").executes(this::showBallot);
 
-		this.registerUserCommands(root, event.getDispatcher());
+		this.registerUserCommands(root);
 		this.registerAdminCommands(root);
 
 		event.getDispatcher().register(root);
 	}
 
-	private void registerUserCommands(LiteralArgumentBuilder<CommandSourceStack> root, CommandDispatcher<CommandSourceStack> dispatcher) {
+	private void registerUserCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
 		LiteralArgumentBuilder<CommandSourceStack> vote = Commands.literal("vote")
 				.then(Commands.literal("list").executes(this::showBallot))
 				.then(Commands.literal("replace").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::setVotes)))
@@ -54,6 +53,7 @@ public class PollingCommands {
 	private void registerAdminCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
 		root.then(Commands.literal("set").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::setPoll)))));
 		root.then(Commands.literal("announce").requires(this::requireGM).executes(this::announceResults));
+		root.then(Commands.literal("import").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).executes(this::importPoll))));
 	}
 
 	private int announceResults(CommandContext<CommandSourceStack> context) {
@@ -209,6 +209,14 @@ public class PollingCommands {
 
 		Component response = Component.literal("Started poll %s with options %s, limited to %d choices".formatted(name, choices, choiceLimit));
 		context.getSource().sendSystemMessage(response);
+
+		return 0;
+	}
+
+	private int importPoll(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+		String name = StringArgumentType.getString(context, "name");
+		int choiceLimit = IntegerArgumentType.getInteger(context, "choice_limit");
+		this.pollManager.importPoll(context.getSource().getServer(), name, choiceLimit);
 
 		return 0;
 	}

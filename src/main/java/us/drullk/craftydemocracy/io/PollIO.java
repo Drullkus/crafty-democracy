@@ -2,17 +2,20 @@ package us.drullk.craftydemocracy.io;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.*;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 import org.jetbrains.annotations.NotNull;
 import us.drullk.craftydemocracy.CraftyDemocracyMod;
 import us.drullk.craftydemocracy.StringUtil;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -24,16 +27,54 @@ public class PollIO {
 	private static final Codec<HashMap<UUID, List<String>>> POLL_CODEC = Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.STRING.listOf()).xmap(HashMap::new, Function.identity());
 
 	private static final String FILE_EXT = ".nbt";
+	private static final String CSV_EXT = ".csv";
 	private static final String SUFFIX_OLD = "_old";
 
 	public static final LevelResource POLLS_DIR = new LevelResource(CraftyDemocracyMod.MODID);
+	public static final LevelResource CSV_DIR = new LevelResource(CraftyDemocracyMod.MODID + "/csv-import");
 
 	public static void mkDirs(MinecraftServer server) {
 		getPollsDir(server).toFile().mkdirs();
+		getImportDir(server).toFile().mkdirs();
 	}
 
 	private static @NotNull Path getPollsDir(MinecraftServer server) {
 		return server.getWorldPath(POLLS_DIR);
+	}
+
+	private static @NotNull Path getImportDir(MinecraftServer server) {
+		return server.getWorldPath(CSV_DIR);
+	}
+
+	public PollMetaData importCSV(MinecraftServer server, String name, int choiceLimit) {
+		File importPath = getImportDir(server).resolve(name + CSV_EXT).toFile();
+
+		ArrayList<Component> choices = new ArrayList<>();
+
+		try (BufferedReader reader = new BufferedReader(new FileReader(importPath))) {
+
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.isBlank()) {
+					continue;
+				}
+				String[] rowEntries = line.split(",");
+				if (rowEntries.length != 2) {
+					throw new IllegalArgumentException("Invalid CSV entry: " + line);
+				}
+				choices.add(Component.literal(rowEntries[0]).withStyle(s -> s
+						.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, rowEntries[1]))
+						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to open URL ").append(Component.literal(rowEntries[1]).withStyle(ChatFormatting.GREEN))))
+						.withUnderlined(true)
+						.withColor(ChatFormatting.AQUA)
+				));
+			}
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		return new PollMetaData(name, choiceLimit, Collections.unmodifiableList(choices));
 	}
 
 	private static @NotNull Path getPollsFilePath(MinecraftServer server, String pollName) {

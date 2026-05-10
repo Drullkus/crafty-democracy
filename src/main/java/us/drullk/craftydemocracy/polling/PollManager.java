@@ -115,6 +115,10 @@ public class PollManager {
 		return this.pollMetaDataCache;
 	}
 
+	public void importPoll(MinecraftServer server, String name, int choiceLimit) throws CommandSyntaxException {
+		this.setPollMetaData(server, this.pollIO.importCSV(server, name, choiceLimit));
+	}
+
 	public void setPoll(MinecraftServer server, String name, int choiceLimit, List<Component> choices) throws CommandSyntaxException {
 		this.setPollMetaData(server, new PollMetaData(name, choiceLimit, choices));
 	}
