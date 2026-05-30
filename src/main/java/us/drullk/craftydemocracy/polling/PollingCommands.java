@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -22,10 +23,20 @@ import java.util.function.UnaryOperator;
 
 public class PollingCommands {
 
+	private static final SimpleCommandExceptionType ERROR_NOT_PLAYER = new SimpleCommandExceptionType(Component.literal("This command must be run by a player"));
+
 	private final PollManager pollManager = new PollManager();
 
 	private boolean requireGM(CommandSourceStack cs) {
 		return cs.hasPermission(Commands.LEVEL_GAMEMASTERS);
+	}
+
+	private ServerPlayer assertRealPlayer(CommandSourceStack source) throws CommandSyntaxException {
+		ServerPlayer player = source.getPlayer();
+		if (player == null || player instanceof FakePlayer) {
+			throw ERROR_NOT_PLAYER.create();
+		}
+		return player;
 	}
 
 	public void registerCommands(RegisterCommandsEvent event) {
@@ -40,9 +51,9 @@ public class PollingCommands {
 	private void registerUserCommands(LiteralArgumentBuilder<CommandSourceStack> root) {
 		LiteralArgumentBuilder<CommandSourceStack> vote = Commands.literal("vote")
 				.then(Commands.literal("list").executes(this::showBallot))
-				.then(Commands.literal("replace").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::setVotes)))
-				.then(Commands.literal("add").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::addVotes)))
-				.then(Commands.literal("remove").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(this::removeVotes)))
+				.then(Commands.literal("replace").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(ctx -> this.modifyVotes(ctx, this.pollManager::setVotes))))
+				.then(Commands.literal("add").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(ctx -> this.modifyVotes(ctx, this.pollManager::addVotes))))
+				.then(Commands.literal("remove").then(Commands.argument("choices", StringArgumentType.greedyString()).executes(ctx -> this.modifyVotes(ctx, this.pollManager::removeVotes))))
 				;
 
 		root.then(vote);
@@ -56,10 +67,7 @@ public class PollingCommands {
 		root.then(Commands.literal("import").requires(this::requireGM).then(Commands.argument("name", StringArgumentType.word()).then(Commands.argument("choice_limit", IntegerArgumentType.integer(1)).executes(this::importPoll))));
 	}
 
-	private int getResults(CommandContext<CommandSourceStack> context) {
-		CommandSourceStack source = context.getSource();
-		MinecraftServer server = source.getServer();
-
+	private Component buildResults(MinecraftServer server) {
 		Map<String, Long> results = this.pollManager.getResults(server);
 
 		List<MutableComponent> ballot = new ArrayList<>();
@@ -68,25 +76,19 @@ public class PollingCommands {
 			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue() + " votes"));
 		}
 
-		Component resultsList = ballot.stream().reduce(Component.empty(), MutableComponent::append);
-		source.sendSystemMessage(resultsList);
+		return ballot.stream().reduce(Component.empty(), MutableComponent::append);
+	}
+
+	private int getResults(CommandContext<CommandSourceStack> context) {
+		CommandSourceStack source = context.getSource();
+		source.sendSystemMessage(this.buildResults(source.getServer()));
 
 		return 0;
 	}
 
 	private int announceResults(CommandContext<CommandSourceStack> context) {
-		CommandSourceStack source = context.getSource();
-		MinecraftServer server = source.getServer();
-
-		Map<String, Long> results = this.pollManager.getResults(server);
-
-		List<MutableComponent> ballot = new ArrayList<>();
-		ballot.add(Component.literal("Results"));
-		for (Map.Entry<String, Long> entry : results.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey())).toList()) {
-			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue() + " votes"));
-		}
-
-		Component resultsList = ballot.stream().reduce(Component.empty(), MutableComponent::append);
+		MinecraftServer server = context.getSource().getServer();
+		Component resultsList = this.buildResults(server);
 
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 			player.sendSystemMessage(resultsList);
@@ -103,73 +105,29 @@ public class PollingCommands {
 		return ret;
 	}
 
-	private int showBallot(CommandContext<CommandSourceStack> context) {
+	private int showBallot(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
-
-		ServerPlayer player = source.getPlayer();
-
-		if (player == null || player instanceof FakePlayer) {
-			return 1;
-		}
+		ServerPlayer player = this.assertRealPlayer(source);
 
 		this.respondChoices(source.getServer(), player.getGameProfile().getId(), context);
 
 		return 0;
 	}
 
-	private int setVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-		CommandSourceStack source = context.getSource();
-		MinecraftServer server = source.getServer();
-
-		String choices = StringArgumentType.getString(context, "choices");
-
-		ServerPlayer player = source.getPlayer();
-
-		if (player == null || player instanceof FakePlayer) {
-			return 1;
-		}
-
-		this.pollManager.setVotes(server, player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
-
-		this.respondChoices(server, player.getGameProfile().getId(), context);
-
-		return 0;
+	@FunctionalInterface
+	private interface VoteOp {
+		void apply(MinecraftServer server, UUID player, List<String> choices) throws CommandSyntaxException;
 	}
 
-	private int addVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+	private int modifyVotes(CommandContext<CommandSourceStack> context, VoteOp op) throws CommandSyntaxException {
 		CommandSourceStack source = context.getSource();
 		MinecraftServer server = source.getServer();
+        UUID playerId = this.assertRealPlayer(source).getGameProfile().getId();
+		List<String> choices = StringUtil.splitWhitespace(StringArgumentType.getString(context, "choices"));
 
-		String choices = StringArgumentType.getString(context, "choices");
+		op.apply(server, playerId, choices);
 
-		ServerPlayer player = source.getPlayer();
-
-		if (player == null || player instanceof FakePlayer) {
-			return 1;
-		}
-
-		this.pollManager.addVotes(server, player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
-
-		this.respondChoices(server, player.getGameProfile().getId(), context);
-
-		return 0;
-	}
-
-	private int removeVotes(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-		CommandSourceStack source = context.getSource();
-		MinecraftServer server = source.getServer();
-
-		String choices = StringArgumentType.getString(context, "choices");
-
-		ServerPlayer player = source.getPlayer();
-
-		if (player == null || player instanceof FakePlayer) {
-			return 1;
-		}
-
-		this.pollManager.removeVotes(server, player.getGameProfile().getId(), StringUtil.splitWhitespace(choices));
-
-		this.respondChoices(server, player.getGameProfile().getId(), context);
+		this.respondChoices(server, playerId, context);
 
 		return 0;
 	}
