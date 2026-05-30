@@ -189,14 +189,14 @@ public class PollingCommands {
 			if (chosen.contains(choiceString)) {
 				UnaryOperator<Style> unvoteTrigger = s -> s
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to remove vote for " + choiceString)))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote remove " + choiceString))
+						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote remove \"" + choiceString + "\""))
 						;
 
 				line.append(Component.translatable(" [%s]", Component.literal("Unvote").withStyle(ChatFormatting.DARK_GREEN).withStyle(unvoteTrigger)));
 			} else if (choicesLeft > 0) {
 				UnaryOperator<Style> voteTrigger = s -> s
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to add vote for " + choiceString)))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote add " + choiceString))
+						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote add \"" + choiceString + "\""))
 						;
 
 				line.append(Component.translatable(" [%s]", Component.literal("Vote").withStyle(ChatFormatting.GREEN).withStyle(voteTrigger)));
