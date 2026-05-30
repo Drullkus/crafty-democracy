@@ -64,7 +64,7 @@ public class PollingCommands {
 
 		List<MutableComponent> ballot = new ArrayList<>();
 		ballot.add(Component.literal("Results"));
-		for (Map.Entry<String, Long> entry : results.entrySet()) {
+		for (Map.Entry<String, Long> entry : results.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey())).toList()) {
 			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue() + " votes"));
 		}
 
@@ -82,7 +82,7 @@ public class PollingCommands {
 
 		List<MutableComponent> ballot = new ArrayList<>();
 		ballot.add(Component.literal("Results"));
-		for (Map.Entry<String, Long> entry : results.entrySet()) {
+		for (Map.Entry<String, Long> entry : results.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey())).toList()) {
 			ballot.add(Component.literal("\n" + entry.getKey() + ": " + entry.getValue() + " votes"));
 		}
 
