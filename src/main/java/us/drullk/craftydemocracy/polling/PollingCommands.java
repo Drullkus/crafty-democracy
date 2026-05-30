@@ -145,19 +145,9 @@ public class PollingCommands {
 
 			String choiceString = choice.getString();
 			if (chosen.contains(choiceString)) {
-				UnaryOperator<Style> unvoteTrigger = s -> s
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to remove vote for " + choiceString)))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote remove \"" + choiceString + "\""))
-						;
-
-				line.append(Component.translatable(" [%s]", Component.literal("Unvote").withStyle(ChatFormatting.DARK_GREEN).withStyle(unvoteTrigger)));
+				line.append(this.makeInteractiveButton("Unvote", ChatFormatting.DARK_GREEN, "Click to remove vote for " + choiceString, "/poll vote remove \"" + choiceString + "\""));
 			} else if (choicesLeft > 0) {
-				UnaryOperator<Style> voteTrigger = s -> s
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to add vote for " + choiceString)))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/poll vote add \"" + choiceString + "\""))
-						;
-
-				line.append(Component.translatable(" [%s]", Component.literal("Vote").withStyle(ChatFormatting.GREEN).withStyle(voteTrigger)));
+				line.append(this.makeInteractiveButton("Vote", ChatFormatting.GREEN, "Click to add vote for " + choiceString, "/poll vote add \"" + choiceString + "\""));
 			}
 
 			line.append("\n");
@@ -166,6 +156,15 @@ public class PollingCommands {
 
 		ballot.add(Component.literal("Choices left: " + choicesLeft));
 		return ballot.stream().reduce(Component.empty(), MutableComponent::append);
+	}
+
+	private MutableComponent makeInteractiveButton(String label, ChatFormatting color, String hover, String command) {
+		UnaryOperator<Style> trigger = s -> s
+				.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover)))
+				.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+				;
+
+		return Component.translatable(" [%s]", Component.literal(label).withStyle(color).withStyle(trigger));
 	}
 
 	private void respondChoices(MinecraftServer server, UUID player, CommandContext<CommandSourceStack> context) {
