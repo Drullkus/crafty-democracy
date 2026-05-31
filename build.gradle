@@ -25,7 +25,7 @@ configurations {
 shadowJar {
     archiveClassifier.set('')
     configurations = [project.configurations.shade]
-    relocate 'tamaized.beanification', 'your.package.beanification'
+    relocate 'tamaized.beanification', 'us.drullk.craftydemocracy.beanification'
 }
 
 sourceSets.main.resources {
