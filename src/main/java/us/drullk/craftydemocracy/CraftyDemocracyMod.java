@@ -5,9 +5,14 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import tamaized.beanification.Autowired;
+import tamaized.beanification.Bean;
 import tamaized.beanification.BeanContext;
+import us.drullk.craftydemocracy.dcintegration.DiscordResultBroadcaster;
+import us.drullk.craftydemocracy.dcintegration.NoOpResultBroadcaster;
+import us.drullk.craftydemocracy.dcintegration.ResultBroadcaster;
 import us.drullk.craftydemocracy.io.PollIO;
 import us.drullk.craftydemocracy.polling.PollingCommands;
 
@@ -36,6 +41,13 @@ public class CraftyDemocracyMod {
 
 		NeoForge.EVENT_BUS.addListener(this.pollingCommands::registerCommands);
 		NeoForge.EVENT_BUS.addListener(this.pollingIO::mkDirs);
+	}
+
+	@Bean
+	public static ResultBroadcaster resultBroadcaster() {
+		return ModList.get().isLoaded("dcintegration")
+				? new DiscordResultBroadcaster()
+				: new NoOpResultBroadcaster();
 	}
 
 }

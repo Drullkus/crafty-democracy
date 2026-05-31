@@ -88,6 +88,15 @@ Adds commands for players to vote from a list.
     ordering="NONE"
     side="BOTH"
 
+# Discord Integration: optional. When present, poll results are also posted to Discord.
+# The mod loads and functions normally without it (a no-op broadcaster is used instead).
+[[dependencies.${mod_id}]]
+    modId="dcintegration"
+    type="optional"
+    versionRange="*"
+    ordering="AFTER"
+    side="SERVER"
+
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
 # stop your mod loading on the server for example.

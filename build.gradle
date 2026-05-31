@@ -42,6 +42,10 @@ repositories {
         name 'Beanification'
         url 'https://maven.tamaized.com/releases/'
     }
+    maven {
+        name 'Erdbeerbaerlp (Discord Integration)'
+        url 'https://repo.erdbeerbaerlp.de/repository/maven-public/'
+    }
 }
 
 base {
@@ -159,6 +163,10 @@ dependencies {
     shade beanification
     testImplementation "${beanification}:tests"
     testCompileOnly "${beanification}:test-sources"
+
+    // Discord Integration: compile against its API only. It is an optional soft dependency,
+    // so it must NOT be bundled/required at runtime — see DiscordResultBroadcaster for the isolation boundary.
+    compileOnly "de.erdbeerbaerlp:dcintegration.common:${project.dcintegration_version}"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

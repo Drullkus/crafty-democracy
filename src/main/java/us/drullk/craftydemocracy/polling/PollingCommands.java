@@ -17,6 +17,7 @@ import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import tamaized.beanification.Autowired;
 import us.drullk.craftydemocracy.StringUtil;
+import us.drullk.craftydemocracy.dcintegration.ResultBroadcaster;
 import us.drullk.craftydemocracy.io.PollMetaData;
 
 import java.util.*;
@@ -28,9 +29,11 @@ public class PollingCommands {
 	private static final SimpleCommandExceptionType ERROR_NOT_PLAYER = new SimpleCommandExceptionType(Component.literal("This command must be run by a player"));
 
 	private final PollManager pollManager;
+	private final ResultBroadcaster resultBroadcaster;
 
-	public PollingCommands(@Autowired PollManager pollManager) {
+	public PollingCommands(@Autowired PollManager pollManager, @Autowired ResultBroadcaster resultBroadcaster) {
 		this.pollManager = pollManager;
+		this.resultBroadcaster = resultBroadcaster;
 	}
 
 	private boolean requireGM(CommandSourceStack cs) {
@@ -99,6 +102,8 @@ public class PollingCommands {
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 			player.sendSystemMessage(resultsList);
 		}
+
+		this.resultBroadcaster.broadcast(resultsList);
 
 		return 0;
 	}
