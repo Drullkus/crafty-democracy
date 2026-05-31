@@ -154,7 +154,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    def beanification = "tamaized:beanification:${project.minecraft_version}-${project.beanification_version}"
+    def beanification = "tamaized:beanification:${project.beanification_version}"
     implementation beanification
     shade beanification
     testImplementation "${beanification}:tests"

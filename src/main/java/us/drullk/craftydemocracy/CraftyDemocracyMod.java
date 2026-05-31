@@ -22,7 +22,7 @@ public class CraftyDemocracyMod {
 
 	static {
 		BeanContext.configure().loggingSettings().enableInjectInto();
-		BeanContext.init();
+		BeanContext.init(MODID);
 	}
 
 	@Autowired
