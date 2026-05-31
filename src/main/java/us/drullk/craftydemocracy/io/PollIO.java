@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import org.jetbrains.annotations.NotNull;
 import us.drullk.craftydemocracy.CraftyDemocracyMod;
 import us.drullk.craftydemocracy.StringUtil;
@@ -34,9 +35,9 @@ public class PollIO {
 	public static final LevelResource POLLS_DIR = new LevelResource(CraftyDemocracyMod.MODID);
 	public static final LevelResource CSV_DIR = new LevelResource(CraftyDemocracyMod.MODID + "/csv-import");
 
-	public static void mkDirs(MinecraftServer server) {
-		getPollsDir(server).toFile().mkdirs();
-		getImportDir(server).toFile().mkdirs();
+	public void mkDirs(ServerAboutToStartEvent event) {
+		getPollsDir(event.getServer()).toFile().mkdirs();
+		getImportDir(event.getServer()).toFile().mkdirs();
 	}
 
 	private static @NotNull Path getPollsDir(MinecraftServer server) {
