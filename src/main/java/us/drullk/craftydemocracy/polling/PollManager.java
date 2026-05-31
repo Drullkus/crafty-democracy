@@ -6,6 +6,7 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import tamaized.beanification.Autowired;
 import us.drullk.craftydemocracy.CollectionUtil;
 import us.drullk.craftydemocracy.CraftyDemocracyMod;
 import us.drullk.craftydemocracy.io.PollMetaData;
@@ -14,6 +15,7 @@ import us.drullk.craftydemocracy.io.PollIO;
 import java.io.IOException;
 import java.util.*;
 
+@tamaized.beanification.Component
 public class PollManager {
 
 	private static final SimpleCommandExceptionType ERROR_IO_FAILED = new SimpleCommandExceptionType(Component.literal("Saving poll errored"));
@@ -27,10 +29,14 @@ public class PollManager {
 	private static final SimpleCommandExceptionType ERROR_CHOICE_LIMIT_TOO_LOW = new SimpleCommandExceptionType(Component.literal("Players must be permitted at least 1 choice"));
 	private static final Dynamic2CommandExceptionType ERROR_CHOICE_LIMIT_TOO_HIGH = new Dynamic2CommandExceptionType((choiceLimit, choiceCount) -> Component.literal("Players' choice limit (%s) is greater than actual list of options (%s)".formatted(choiceLimit, choiceCount)));
 
-	private final PollIO pollIO = new PollIO();
+	private final PollIO pollIO;
 
 	private PollMetaData pollMetaDataCache;
 	private HashMap<UUID, List<String>> pollCache;
+
+	public PollManager(@Autowired PollIO pollIO) {
+		this.pollIO = pollIO;
+	}
 
 	public void setVotes(MinecraftServer server, UUID player, List<String> choicesRaw) throws CommandSyntaxException {
 		PollMetaData pollMetaData = this.getPollMetaData(server);

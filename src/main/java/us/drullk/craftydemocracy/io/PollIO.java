@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.function.Function;
 
 // TODO Async executor?
+@tamaized.beanification.Component
 public class PollIO {
 
 	private static final Codec<HashMap<UUID, List<String>>> POLL_CODEC = Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.STRING.listOf()).xmap(HashMap::new, Function.identity());

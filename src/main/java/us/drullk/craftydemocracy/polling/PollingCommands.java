@@ -15,6 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import tamaized.beanification.Autowired;
 import us.drullk.craftydemocracy.StringUtil;
 import us.drullk.craftydemocracy.io.PollMetaData;
 
@@ -26,7 +27,11 @@ public class PollingCommands {
 
 	private static final SimpleCommandExceptionType ERROR_NOT_PLAYER = new SimpleCommandExceptionType(Component.literal("This command must be run by a player"));
 
-	private final PollManager pollManager = new PollManager();
+	private final PollManager pollManager;
+
+	public PollingCommands(@Autowired PollManager pollManager) {
+		this.pollManager = pollManager;
+	}
 
 	private boolean requireGM(CommandSourceStack cs) {
 		return cs.hasPermission(Commands.LEVEL_GAMEMASTERS);
