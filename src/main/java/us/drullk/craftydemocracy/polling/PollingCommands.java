@@ -21,6 +21,7 @@ import us.drullk.craftydemocracy.io.PollMetaData;
 import java.util.*;
 import java.util.function.UnaryOperator;
 
+@tamaized.beanification.Component
 public class PollingCommands {
 
 	private static final SimpleCommandExceptionType ERROR_NOT_PLAYER = new SimpleCommandExceptionType(Component.literal("This command must be run by a player"));

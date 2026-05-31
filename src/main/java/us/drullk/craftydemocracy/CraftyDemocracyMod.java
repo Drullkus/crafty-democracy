@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import net.neoforged.fml.common.Mod;
+import tamaized.beanification.Autowired;
+import tamaized.beanification.BeanContext;
 import us.drullk.craftydemocracy.io.PollIO;
 import us.drullk.craftydemocracy.polling.PollingCommands;
 
@@ -18,8 +20,18 @@ public class CraftyDemocracyMod {
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
 
+	static {
+		BeanContext.configure().loggingSettings().enableInjectInto();
+		BeanContext.init();
+	}
+
+	@Autowired
+	public PollingCommands pollingCommands;
+
 	public CraftyDemocracyMod() {
-		NeoForge.EVENT_BUS.addListener(new PollingCommands()::registerCommands);
+		BeanContext.injectInto(this);
+
+		NeoForge.EVENT_BUS.addListener(this.pollingCommands::registerCommands);
 		NeoForge.EVENT_BUS.addListener(this::mkDirs);
 	}
 
